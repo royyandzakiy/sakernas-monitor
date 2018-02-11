@@ -1,18 +1,300 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
+import logo from './logo.png';
 import './App.css';
+import $ from 'jquery';
 
 class App extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      prov_list: {},
+      prov_val: '',
+      kab_list: {},
+      kab_val: '',
+      report_val: 'pemutakhiran',
+      tabel: {}
+    };
+
+    this.changeProv = this.changeProv.bind(this);
+    this.changeKab = this.changeKab.bind(this);
+    this.changeReport = this.changeReport.bind(this);
+    this.refresh = this.refresh.bind(this);
+
+    $.get("http://localhost:8002/master-prov",
+        {},
+        function(data, status) {
+            // alert(JSON.stringify(data));
+            $("#monitor-prov > option").remove();
+            if (data.length != 0)
+                for (var i=0; i<data.length; i++) {
+                  $("#monitor-prov").append(
+                    "<option value="+ data[i]['kode_prov'] +">["+data[i]['kode_prov'] + "] " + data[i]['nama_prov'] + "</option>"
+                  );
+                }
+
+            this.setState({
+              prov_list: data,
+              prov_val: data[0]['kode_prov']
+            });
+        }.bind(this));
+
+        $.get("http://localhost:8002/master-kab",
+            {kode_prov: this.state.prov_val},
+            function(data, status) {
+                // alert(JSON.stringify(data));
+                $("#monitor-kab > option").remove();
+                if (data.length != 0)
+                    for (var i=0; i<data.length; i++) {
+                      if(data[i]['kode_prov'] == this.state.prov_val)
+                          $("#monitor-kab").append(
+                            "<option value="+ data[i]['kode_kab'] +">["+data[i]['kode_kab'] + "] " + data[i]['nama_kab'] + "</option>"
+                          );
+                    }
+
+                    this.setState({
+                      kab_list: data,
+                      kab_val: data[0]['kode_kab']
+                    });
+            }.bind(this));
+
+            this.setState({
+              report_val: 'pemutakhiran'
+            });
+  }
+
+  refresh(e) {
+    e.preventDefault();
+
+    var report = this.state.report_val;
+    var query = {
+      kode_kab: this.state.kab_val,
+      kode_prov: this.state.prov_val,
+    }
+
+    $.get("http://localhost:8002/pemutakhiran/"/* + (report == 'Pemutakhiran' ? "pemutakhiran" : "data-rt" )*/,
+        query,
+        function(data, status) {
+            $("#App-table > tbody > tr").remove();
+            if (data.length != 0)
+                this.setState({
+                    tabel: data
+                }, () => {
+                  var dokBlank, dokClean, dokError, dokTotal, nksTotal, kecTotal = 0;
+
+                  var kec_list = [];
+                  var kode_kec_list = [];
+                  var temp = {};
+
+                  for (var i=0; i<data.length; i++) {
+                      if (!kode_kec_list.includes(data[i]['kode_kec'])) {
+                          kode_kec_list.push(data[i]['kode_kec']);
+
+                          temp = {
+                            kode_kec:'',
+                            nama_kec:'',
+                            dokClean:0,
+                            dokBlank:0,
+                            dokError:0
+                          };
+
+                          temp['kode_kec'] = data[i]['kode_kec'];
+                          temp['nama_kec'] = data[i]['nama_kec'];
+                          kec_list.push(temp);
+                      }
+
+                      var indexOfKec = kode_kec_list.indexOf(data[i]['kode_kec']);
+                      if (data[i]['status_dok'].toLowerCase()  == 'c')
+                          kec_list[indexOfKec]['dokClean']++;
+                      else if (data[i]['status_dok'].toLowerCase()  == 'b')
+                          kec_list[indexOfKec]['dokBlank']++;
+                      else if (data[i]['status_dok'].toLowerCase()  == 'e')
+                          kec_list[indexOfKec]['dokError']++;
+                  }
+
+                  var tableRef = $("#App-table > tbody");
+                  // var tableRef = $("table");
+
+                  if (kode_kec_list.length == 0)
+                      tableRef.append(
+                      "<tr class='data'>"+
+                        "<td colspan='12'>Tidak ada data yang sesuai</td>"+
+                      "</tr>");
+                  else
+                      for (var i=0; i<kode_kec_list.length; i++) {
+                          dokBlank, dokClean, dokError, dokTotal, nksTotal, kecTotal = 0;
+
+                          dokClean = kec_list[i]['dokClean'];
+                          dokError = kec_list[i]['dokError'];
+                          dokBlank = kec_list[i]['dokBlank'];
+                          dokTotal = dokBlank + dokClean + dokError;
+                          nksTotal = '???';
+                          kecTotal = kode_kec_list.length;
+                          tableRef.append(
+                              <tr>
+                                  "<td>"+kec_list[i]['???']+"</td>"
+                                  "<td>"+kec_list[i]['nama_prov']+"</td>"
+                                  "<td>"+kec_list[i]['nama_kab']+"</td>"
+                                  "<td>"+kec_list[i]['nama_kec']+"</td>"
+                                  "<td>"+dokBlank+"</td>"
+                                  "<td>"+dokBlank/dokTotal+"</td>"
+                                  "<td>"+dokClean+"</td>"
+                                  "<td>"+dokClean/dokTotal+"</td>"
+                                  "<td>"+dokError+"</td>"
+                                  "<td>"+dokError/dokTotal+"</td>"
+                                  "<td>"+dokTotal+"</td>"
+                                  "<td>"+nksTotal+"</td>"
+                              </tr>
+                          );
+                      }
+                });
+        }.bind(this));
+  }
+
+  changeReport(event) {
+    this.setState({
+      report_val:event.target.value
+    });
+  }
+
+  changeKab(event) {
+    this.setState({
+      kab_val:event.target.value
+    });
+  }
+
+  changeProv(event) {
+    this.setState({
+      prov_val:event.target.value
+    }, () => {
+
+    $("#monitor-kab > option").remove();
+    var data = this.state.kab_list;
+
+    // rubah pilihan pada dropdown list kabupaten
+    for (var i=0; i<data.length; i++)
+      if(data[i]['kode_prov'] == this.state.prov_val)
+          $("#monitor-kab").append(
+            "<option value="+ data[i]['kode_kab'] +">["+data[i]['kode_kab'] + "] " + data[i]['nama_kab'] + "</option>"
+          );
+    });
+  }
+
   render() {
     return (
       <div className="App">
         <header className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React</h1>
+          <h1 className="App-title">Sakernas Monitor</h1>
+          <p className="App-intro">
+            Monitoring Sensus dan Survei
+          </p>
         </header>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
+
+        <div id="main" class="container">
+        <div id="App-pilih" class="col-lg-8">
+        <table >
+            <tbody>
+                <tr>
+                    <td>Jenis Kegiatan: </td>
+                    <td>
+                    <select id="jenis-kegiatan">
+                        <option>Sakernas 2017</option>
+                    </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Provinsi: </td>
+                    <td>
+                    <select id="monitor-prov" onChange={this.changeProv.bind(this)} value={this.state.prov_value}>
+                        <option>-</option>
+                    </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Kab/Kota: </td>
+                    <td>
+                    <select id="monitor-kab" onChange={this.changeKab.bind(this)} value={this.state.kab_value}>
+                        <option>-</option>
+                    </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Report: </td>
+                    <td>
+                    <select id="monitor-report" onChange={this.changeReport.bind(this)} value={this.state.report_value}>
+                        <option>Pemutakhiran</option>
+                        <option>Rumah Tangga</option>
+                    </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <button id="monitor-Refresh" onClick={this.refresh}>Refresh</button>
+        </div>
+
+
+        <div>
+            <table id="App-table" class="table table-striped table-hover table-bordered">
+                <thead>
+                    <tr>
+                        <th>
+                            Kode Wilayah
+                        </th>
+                        <th>
+                            Nama Prov
+                        </th>
+                        <th>
+                            Nama Kab
+                        </th>
+                        <th>
+                            Nama Kec
+                        </th>
+                        <th>
+                            DokBlank
+                        </th>
+                        <th>
+                            PersenBlank
+                        </th>
+                        <th>
+                            DokClean
+                        </th>
+                        <th>
+                            PersenClean
+                        </th>
+                        <th>
+                            DokError
+                        </th>
+                        <th>
+                            PersenError
+                        </th>
+                        <th>
+                            Total
+                        </th>
+                        <th>
+                            TotalNKS
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>31782137</td>
+                        <td>DKI Jakarta</td>
+                        <td>JAKARTA PUSAT</td>
+                        <td>TANAH ABANG</td>
+                        <td>0</td>
+                        <td>0.00</td>
+                        <td>30</td>
+                        <td>30.00</td>
+                        <td>70</td>
+                        <td>70.00</td>
+                        <td>100</td>
+                        <td>100</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        </div>
       </div>
     );
   }
