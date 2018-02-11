@@ -224,7 +224,7 @@ class App extends Component {
                 <tr>
                     <td>Jenis Kegiatan: </td>
                     <td>
-                    <select id="jenis-kegiatan">
+                    <select id="jenis-kegiatan" class="form-control">
                         <option>Sakernas 2017</option>
                     </select>
                     </td>
@@ -232,7 +232,7 @@ class App extends Component {
                 <tr>
                     <td>Provinsi: </td>
                     <td>
-                    <select id="monitor-prov" onChange={this.changeProv.bind(this)} value={this.state.prov_value}>
+                    <select class="form-control" id="monitor-prov" onChange={this.changeProv.bind(this)} value={this.state.prov_value}>
                         <option>-</option>
                     </select>
                     </td>
@@ -240,7 +240,7 @@ class App extends Component {
                 <tr>
                     <td>Kab/Kota: </td>
                     <td>
-                    <select id="monitor-kab" onChange={this.changeKab.bind(this)} value={this.state.kab_value}>
+                    <select class="form-control" id="monitor-kab" onChange={this.changeKab.bind(this)} value={this.state.kab_value}>
                         <option>-</option>
                     </select>
                     </td>
@@ -248,7 +248,7 @@ class App extends Component {
                 <tr>
                     <td>Report: </td>
                     <td>
-                    <select id="monitor-report" onChange={this.changeReport.bind(this)} value={this.state.report_value}>
+                    <select class="form-control" id="monitor-report" onChange={this.changeReport.bind(this)} value={this.state.report_value}>
                         <option>Pemutakhiran</option>
                         <option>Rumah Tangga</option>
                     </select>
