@@ -12,6 +12,8 @@ class App extends Component {
       prov_val: '',
       kab_list: {},
       kab_val: '',
+      kec_list: {},
+      kec_val: '',
       report_val: 'pemutakhiran',
       tabel: {}
     };
@@ -29,7 +31,8 @@ class App extends Component {
             if (data.length != 0)
                 for (var i=0; i<data.length; i++) {
                   $("#monitor-prov").append(
-                    "<option value="+ data[i]['kode_prov'] +">["+data[i]['kode_prov'] + "] " + data[i]['nama_prov'] + "</option>"
+                    "<option " + (i==0 ? "selected" : "") +
+                    " value="+ data[i]['kode_prov'] +">["+data[i]['kode_prov'] + "] " + data[i]['nama_prov'] + "</option>"
                   );
                 }
 
@@ -58,6 +61,17 @@ class App extends Component {
                     });
             }.bind(this));
 
+            $.get("http://localhost:8002/master-kec",
+                {},
+                function(data, status) {
+                    // alert(JSON.stringify(data));
+
+                    this.setState({
+                      kec_list: data,
+                      kec_val: data[0]['kode_kec']
+                    });
+                }.bind(this));
+
             this.setState({
               report_val: 'pemutakhiran'
             });
@@ -72,7 +86,9 @@ class App extends Component {
       kode_prov: this.state.prov_val,
     }
 
-    $.get("http://localhost:8002/pemutakhiran/"/* + (report == 'Pemutakhiran' ? "pemutakhiran" : "data-rt" )*/,
+    var tableRef = $("#App-table > tbody");
+
+    $.get("http://localhost:8002/" + (report == 'Pemutakhiran' ? "pemutakhiran/" : "data-rt/" ),
         query,
         function(data, status) {
             $("#App-table > tbody > tr").remove();
@@ -86,6 +102,7 @@ class App extends Component {
                   var kode_kec_list = [];
                   var temp = {};
 
+                  // isi kode_kec_list & kec_list
                   for (var i=0; i<data.length; i++) {
                       if (!kode_kec_list.includes(data[i]['kode_kec'])) {
                           kode_kec_list.push(data[i]['kode_kec']);
@@ -100,6 +117,7 @@ class App extends Component {
 
                           temp['kode_kec'] = data[i]['kode_kec'];
                           temp['nama_kec'] = data[i]['nama_kec'];
+                          // alert("temp: "+JSON.stringify(temp));
                           kec_list.push(temp);
                       }
 
@@ -112,15 +130,8 @@ class App extends Component {
                           kec_list[indexOfKec]['dokError']++;
                   }
 
-                  var tableRef = $("#App-table > tbody");
-                  // var tableRef = $("table");
 
-                  if (kode_kec_list.length == 0)
-                      tableRef.append(
-                      "<tr class='data'>"+
-                        "<td colspan='12'>Tidak ada data yang sesuai</td>"+
-                      "</tr>");
-                  else
+
                       for (var i=0; i<kode_kec_list.length; i++) {
                           dokBlank, dokClean, dokError, dokTotal, nksTotal, kecTotal = 0;
 
@@ -128,32 +139,47 @@ class App extends Component {
                           dokError = kec_list[i]['dokError'];
                           dokBlank = kec_list[i]['dokBlank'];
                           dokTotal = dokBlank + dokClean + dokError;
-                          nksTotal = '???';
+                          nksTotal = '-';
                           kecTotal = kode_kec_list.length;
+
+                          var nama_prov = $('#monitor-prov option:selected').text();
+                          var nama_kab = $('#monitor-kab option:selected').text();
+
+                          var indexOfKec = this.state.kec_list.map(function(d) { return d['kode_kec']; }).indexOf(kode_kec_list[i]);
+                          // alert(JSON.stringify(this.state.kec_list));
+
+                          // jika !pemutakhiran => tidak ada nama kecamatan
+                          var nama_kec = (report == 'Pemutakhiran' ? this.state.kec_list[indexOfKec]['nama_kec'] : '-');
                           tableRef.append(
-                              <tr>
-                                  "<td>"+kec_list[i]['???']+"</td>"
-                                  "<td>"+kec_list[i]['nama_prov']+"</td>"
-                                  "<td>"+kec_list[i]['nama_kab']+"</td>"
-                                  "<td>"+kec_list[i]['nama_kec']+"</td>"
-                                  "<td>"+dokBlank+"</td>"
-                                  "<td>"+dokBlank/dokTotal+"</td>"
-                                  "<td>"+dokClean+"</td>"
-                                  "<td>"+dokClean/dokTotal+"</td>"
-                                  "<td>"+dokError+"</td>"
-                                  "<td>"+dokError/dokTotal+"</td>"
-                                  "<td>"+dokTotal+"</td>"
-                                  "<td>"+nksTotal+"</td>"
-                              </tr>
+                              "<tr>"+
+                                  "<td>"+"000000"+"</td>"+
+                                  "<td>"+nama_prov+"</td>"+
+                                  "<td>"+nama_kab+"</td>"+
+                                  "<td>"+nama_kec+"</td>"+
+                                  "<td>"+dokBlank+"</td>"+
+                                  "<td>"+(dokBlank/dokTotal)*100+"%</td>"+
+                                  "<td>"+dokClean+"</td>"+
+                                  "<td>"+(dokClean/dokTotal)*100+"%</td>"+
+                                  "<td>"+dokError+"</td>"+
+                                  "<td>"+(dokError/dokTotal)*100+"%</td>"+
+                                  "<td>"+dokTotal+"</td>"+
+                                  "<td>"+nksTotal+"</td>"+
+                              "</tr>"
                           );
                       }
                 });
+              else
+                  tableRef.append(
+                  "<tr class='data'>"+
+                    "<td colspan='12'>Tidak ada data yang sesuai</td>"+
+                  "</tr>");
         }.bind(this));
   }
 
   changeReport(event) {
     this.setState({
       report_val:event.target.value
+    }, () => {
     });
   }
 
@@ -277,20 +303,9 @@ class App extends Component {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>31782137</td>
-                        <td>DKI Jakarta</td>
-                        <td>JAKARTA PUSAT</td>
-                        <td>TANAH ABANG</td>
-                        <td>0</td>
-                        <td>0.00</td>
-                        <td>30</td>
-                        <td>30.00</td>
-                        <td>70</td>
-                        <td>70.00</td>
-                        <td>100</td>
-                        <td>100</td>
-                    </tr>
+                  <tr class='data'>
+                    <td colspan='12'>Tekan Refresh</td>
+                  </tr>
                 </tbody>
             </table>
         </div>
