@@ -9,9 +9,9 @@ class App extends Component {
 
     this.state = {
       prov_list: {},
-      prov_val: '',
+      prov_val: '00',
       kab_list: {},
-      kab_val: '',
+      kab_val: '01',
       kec_list: {},
       kec_val: '',
       report_val: 'pemutakhiran',
@@ -85,6 +85,7 @@ class App extends Component {
       kode_kab: this.state.kab_val,
       kode_prov: this.state.prov_val,
     }
+
 
     var tableRef = $("#App-table > tbody");
 
@@ -211,7 +212,7 @@ class App extends Component {
       <div className="App">
         <header className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Sakernas Monitor</h1>
+          <h1 className="App-title">Web Monitoring Sensus dan Survei</h1>
           <p className="App-intro">
             Monitoring Sensus dan Survei
           </p>
