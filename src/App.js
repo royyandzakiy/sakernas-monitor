@@ -89,9 +89,12 @@ class App extends Component {
 
     var tableRef = $("#App-table > tbody");
 
-    $.get("http://localhost:8002/" + (report == 'Pemutakhiran' ? "pemutakhiran/" : "data-rt/" ),
+    console.log("tes pemutakhiran: "+report);
+
+    $.get("http://localhost:8002/" + (report.toLowerCase() == 'pemutakhiran' ? "pemutakhiran/" : "data-rt-monitor/" ),
         query,
         function(data, status) {
+          // alert(JSON.stringify(data));
             $("#App-table > tbody > tr").remove();
             if (data.length != 0)
                 this.setState({
@@ -103,6 +106,7 @@ class App extends Component {
                   var kode_kec_list = [];
                   var temp = {};
 
+                  // /*
                   // isi kode_kec_list & kec_list
                   for (var i=0; i<data.length; i++) {
                       if (!kode_kec_list.includes(data[i]['kode_kec'])) {
@@ -121,6 +125,8 @@ class App extends Component {
                           // alert("temp: "+JSON.stringify(temp));
                           kec_list.push(temp);
                       }
+
+                      console.log("tes: "+JSON.stringify(data[i]));
 
                       var indexOfKec = kode_kec_list.indexOf(data[i]['kode_kec']);
                       if (data[i]['status_dok'].toLowerCase()  == 'c')
@@ -168,6 +174,7 @@ class App extends Component {
                               "</tr>"
                           );
                       }
+                      //*/
                 });
               else
                   tableRef.append(
